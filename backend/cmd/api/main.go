@@ -38,6 +38,7 @@ func main() {
 
 	// protected routes
 	http.Handle("/api/me", auth.RequireAuth(http.HandlerFunc(handleMe)))
+	http.Handle("/api/groups", auth.RequireAuth(http.HandlerFunc(handleCreateGroup)))
 
 	fmt.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -120,4 +121,83 @@ func handleMe(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message": "You are authenticated!", "user_id": "%s"}`, userID)
+}
+
+type CreateGroupRequest struct {
+	Name string `json:"name"`
+}
+
+type Group struct {
+	ID      string `json:"id"`
+	OwnerID string `json:"owner_id"`
+	Name    string `json:"name"`
+}
+
+func handleCreateGroup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req CreateGroupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.Name == "" {
+		http.Error(w, "Group name is required", http.StatusBadRequest)
+		return
+	}
+
+	groupID, _ := uuid.NewV7()
+
+	// start a transaction (all or nothing)
+	tx, err := db.Begin(r.Context())
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(r.Context())
+
+	// insert group into groups
+	_, err = tx.Exec(
+		r.Context(),
+		"INSERT INTO groups (id, owner_id, name) VALUES ($1, $2, $3)",
+		groupID, userID, req.Name,
+	)
+	if err != nil {
+		http.Error(w, "Failed to create group", http.StatusInternalServerError)
+		return
+	}
+
+	// automatically add user into group
+	_, err = tx.Exec(
+		r.Context(),
+		"INSERT INTO group_members (group_id, user_id) VALUES ($1, $2)",
+		groupID, userID,
+	)
+	if err != nil {
+		http.Error(w, "Failed to join group", http.StatusInternalServerError)
+		return
+	}
+
+	// handle all errors
+	if err := tx.Commit(r.Context()); err != nil {
+		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+		return
+	}
+
+	// return success
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Group{
+		ID:      groupID.String(),
+		OwnerID: userID,
+		Name:    req.Name,
+	})
 }

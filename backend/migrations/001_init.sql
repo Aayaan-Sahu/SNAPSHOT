@@ -1,7 +1,11 @@
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     google_sub TEXT UNIQUE NOT NULL,
-    timezone TEXT DEFAULT 'UTC'
+    email TEXT UNIQUE NOT NULL,
+    name TEXT,
+    picture TEXT,
+    timezone TEXT DEFAULT 'UTC',
+    role TEXT DEFAULT 'user'
 );
 
 CREATE TABLE IF NOT EXISTS friendships (

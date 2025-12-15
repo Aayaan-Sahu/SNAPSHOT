@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/Aayaan-Sahu/SNAPSHOT/internal/auth"
 	"github.com/google/uuid"
@@ -146,12 +147,20 @@ func handleCreateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req CreateGroupRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
 		http.Error(w, "Group name is required", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.Name) > 100 {
+		http.Error(w, "Group name too long (max 100 characters", http.StatusBadRequest)
 		return
 	}
 
@@ -163,7 +172,7 @@ func handleCreateGroup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback(r.Context())
+	defer func() { _ = tx.Rollback(r.Context()) }()
 
 	// insert group into groups
 	_, err = tx.Exec(

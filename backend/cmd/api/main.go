@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/Aayaan-Sahu/SNAPSHOT/internal/auth"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 )
@@ -181,6 +183,11 @@ func handleCreateGroup(w http.ResponseWriter, r *http.Request) {
 		groupID, userID, req.Name,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			http.Error(w, "You already have a group with this name", http.StatusConflict)
+			return
+		}
 		http.Error(w, "Failed to create group", http.StatusInternalServerError)
 		return
 	}
@@ -203,10 +210,13 @@ func handleCreateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// return success
+	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Group{
-		ID:      groupID.String(),
-		OwnerID: userID,
-		Name:    req.Name,
+	json.NewEncoder(w).Encode(map[string]Group{
+		"group": {
+			ID:      groupID.String(),
+			OwnerID: userID,
+			Name:    req.Name,
+		},
 	})
 }

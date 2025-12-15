@@ -4,6 +4,8 @@
 # DATABASE
 - migration tool like goose
 
+# API Endpoints
+- test if POST /api/groups/join endpoint works from another account
+
 # AUTHENTICATION
 - passing token in query string is not ideal
-- JWT generation so users can authenticate against future API endpoints

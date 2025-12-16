@@ -28,6 +28,8 @@ func handleGroups(w http.ResponseWriter, r *http.Request) {
 		handleListGroups(w, r)
 	case http.MethodPost:
 		createGroup(w, r)
+	case http.MethodDelete:
+		handleDeleteGroup(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -207,5 +209,149 @@ func handleJoinGroup(w http.ResponseWriter, r *http.Request) {
 		"status":   "success",
 		"group_id": req.GroupID,
 		"user_id":  userID,
+	})
+}
+
+func handleGetGroupMembers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	groupID := r.URL.Query().Get("group_id")
+	if groupID == "" {
+		http.Error(w, "group_id is required", http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var exists bool
+	err := db.QueryRow(r.Context(),
+		"SELECT EXISTS(SELECT 1 FROM group_members WHERE group_id=$1 and user_id=$2)",
+		groupID, userID,
+	).Scan(&exists)
+	if err != nil || !exists {
+		http.Error(w, "Forbidden: You are not a member of this group", http.StatusForbidden)
+		return
+	}
+
+	rows, err := db.Query(r.Context(),
+		`SELECT u.id, u.name, u.picture
+		 FROM group_members gm
+		 JOIN users u ON gm.user_id = u.id
+		 WHERE gm.group_id = $1`,
+		groupID,
+	)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	members := make([]Friend, 0)
+	for rows.Next() {
+		var m Friend
+		var pic *string
+		if err := rows.Scan(&m.ID, &m.Name, &pic); err != nil {
+			continue
+		}
+		if pic != nil {
+			m.Picture = *pic
+		}
+		members = append(members, m)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"members": members,
+	})
+}
+
+type LeaveGroupRequest struct {
+	GroupID string `json:"group_id"`
+}
+
+func handleLeaveGroup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req LeaveGroupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	var ownerID string
+	err := db.QueryRow(r.Context(),
+		"SELECT owner_id FROM groups WHERE id=$1",
+		req.GroupID,
+	).Scan(&ownerID)
+	if err == nil && ownerID == userID {
+		http.Error(w, "Owner cannot leave group. Delete the group instead", http.StatusConflict)
+		return
+	}
+
+	_, err = db.Exec(r.Context(),
+		"DELETE FROM group_members WHERE group_id=$1 AND user_id=$2",
+		req.GroupID, userID,
+	)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "left_group"})
+}
+
+func handleDeleteGroup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	groupID := r.URL.Query().Get("group_id")
+	if groupID == "" {
+		http.Error(w, "group_id is required", http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	result, err := db.Exec(r.Context(),
+		"DELETE FROM groups WHERE id = $1 AND owner_id = $2",
+		groupID, userID,
+	)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	if result.RowsAffected() == 0 {
+		http.Error(w, "Group not found or you are not the owner", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "group_deleted",
+		"id":     groupID,
 	})
 }

@@ -12,9 +12,12 @@ CREATE TABLE IF NOT EXISTS friendships (
     user_a_id UUID REFERENCES users(id) ON DELETE CASCADE,
     user_b_id UUID REFERENCES users(id) ON DELETE CASCADE,
     status TEXT CHECK (status IN ('pending', 'accepted', 'blocked')),
+    requester_id UUID REFERENCES users(id),
     PRIMARY KEY (user_a_id, user_b_id),
     CONSTRAINT ensure_canonical_order CHECK (user_a_id < user_b_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_friendships_user_b ON friendships(user_b_id);
 
 CREATE TABLE IF NOT EXISTS groups (
     id UUID PRIMARY KEY,

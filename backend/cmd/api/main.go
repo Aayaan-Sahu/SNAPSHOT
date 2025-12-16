@@ -35,8 +35,13 @@ func main() {
 
 	// protected routes
 	http.Handle("/api/me", auth.RequireAuth(http.HandlerFunc(handleMe)))
+
 	http.Handle("/api/groups", auth.RequireAuth(http.HandlerFunc(handleGroups)))
 	http.Handle("/api/groups/join", auth.RequireAuth(http.HandlerFunc(handleJoinGroup)))
+
+	http.Handle("/api/friends", auth.RequireAuth(http.HandlerFunc(handleListFriends)))
+	http.Handle("/api/friends/request", auth.RequireAuth(http.HandlerFunc(handleFriendRequest)))
+	http.Handle("/api/friends/accept", auth.RequireAuth(http.HandlerFunc(handleAcceptFriend)))
 
 	fmt.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

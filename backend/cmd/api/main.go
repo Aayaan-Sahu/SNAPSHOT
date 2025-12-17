@@ -8,11 +8,13 @@ import (
 	"os"
 
 	"github.com/Aayaan-Sahu/SNAPSHOT/internal/auth"
+	"github.com/Aayaan-Sahu/SNAPSHOT/internal/storage"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
 
 var db *pgx.Conn
+var s3Client *storage.S3Service
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -45,6 +47,19 @@ func main() {
 	http.Handle("/api/friends/request", auth.RequireAuth(http.HandlerFunc(handleFriendRequest)))
 	http.Handle("/api/friends/accept", auth.RequireAuth(http.HandlerFunc(handleAcceptFriend)))
 
+	s3Client, err = storage.NewS3Service()
+	if err != nil {
+		log.Fatalf("Failed to initialize S3: %v", err)
+	} else {
+		log.Println("S3 Service initialized successfully")
+	}
+
+	http.Handle("/api/photos/upload-url", auth.RequireAuth(http.HandlerFunc(handleGetUploadURL)))
+	http.Handle("/api/photos", auth.RequireAuth(http.HandlerFunc(handleConfirmPhoto)))
+	http.Handle("/api/photos/slideshow", auth.RequireAuth(http.HandlerFunc(handleGetSlideshow)))
+
 	fmt.Println("Server running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal(err)
+	}
 }

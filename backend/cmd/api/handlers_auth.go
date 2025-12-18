@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
+	"time"
 
 	"github.com/Aayaan-Sahu/SNAPSHOT/internal/auth"
 	"github.com/google/uuid"
@@ -82,7 +86,7 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 type GoogleLoginRequest struct {
-	IDToken string `json:"id_token"`
+	IDToken string `json:"idToken"`
 }
 
 type GoogleTokenInfo struct {
@@ -91,35 +95,83 @@ type GoogleTokenInfo struct {
 	Name          string `json:"name"`
 	Picture       string `json:"picture"`
 	Sub           string `json:"sub"`
+
+	Aud string `json:"aud"`
+	Iss string `json:"iss"`
 }
 
 func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
-
-	fmt.Print("Entering the google login endpoint")
 
 	var req GoogleLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	if req.IDToken == "" {
+		http.Error(w, "Missing idToken", http.StatusBadRequest)
+		return
+	}
 
-	resp, err := http.Get("https://oauth2.googleapis.com/tokeninfo?id_token=" + req.IDToken)
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+
+	tokenInfoURL := "https://oauth2.googleapis.com/tokeninfo?id_token=" + url.QueryEscape(req.IDToken)
+	httpClient := &http.Client{Timeout: 15 * time.Second}
+
+	reqGoogle, err := http.NewRequestWithContext(ctx, http.MethodGet, tokenInfoURL, nil)
 	if err != nil {
+		http.Error(w, "Failed to build Google request", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := httpClient.Do(reqGoogle)
+	if err != nil {
+		fmt.Printf("Google tokeninfo request error: %v\n", err)
 		http.Error(w, "Failed to validate token with Google", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		fmt.Printf("Google tokeninfo non-200: %d body=%s\n", resp.StatusCode, string(bodyBytes))
 		http.Error(w, "Invalid Google Token", http.StatusUnauthorized)
 		return
 	}
 
-	var googleUser GoogleTokenInfo
-	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
+	var g GoogleTokenInfo
+	if err := json.NewDecoder(resp.Body).Decode(&g); err != nil {
 		http.Error(w, "Failed to parse Google response", http.StatusInternalServerError)
+		return
+	}
+
+	if g.Iss != "https://accounts.google.com" && g.Iss != "accounts.google.com" {
+		http.Error(w, "Invalid token issuer", http.StatusUnauthorized)
+		return
+	}
+
+	iosClientID := os.Getenv("GOOGLE_IOS_CLIENT_ID")
+
+	audOK := false
+	if iosClientID != "" && g.Aud == iosClientID {
+		audOK = true
+	}
+	if !audOK {
+		http.Error(w, "Invalid token audience", http.StatusUnauthorized)
+		return
+	}
+
+	if g.EmailVerified != "true" {
+		http.Error(w, "Google email not verified", http.StatusUnauthorized)
+		return
+	}
+
+	if g.Sub == "" || g.Email == "" {
+		http.Error(w, "Invalid Google token payload", http.StatusUnauthorized)
 		return
 	}
 
@@ -131,28 +183,23 @@ func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 		SET name = EXCLUDED.name,
 			picture = EXCLUDED.picture,
 			google_sub = EXCLUDED.google_sub
-		RETURNING id`
-
-	err = db.QueryRow(r.Context(), query,
-		googleUser.Email,
-		googleUser.Name,
-		googleUser.Picture,
-		googleUser.Sub,
-	).Scan(&userID)
-	if err != nil {
-		fmt.Printf("Database Error: %v\n", err)
+		RETURNING id;
+	`
+	if err := db.QueryRow(r.Context(), query, g.Email, g.Name, g.Picture, g.Sub).Scan(&userID); err != nil {
+		fmt.Printf("Database error: %v\n", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
 	token, err := auth.GenerateToken(auth.TokenPayload{
 		UserID:  userID,
-		Email:   googleUser.Email,
-		Name:    googleUser.Name,
-		Picture: googleUser.Picture,
+		Email:   g.Email,
+		Name:    g.Name,
+		Picture: g.Picture,
 		Role:    "user",
 	})
 	if err != nil {
+		fmt.Printf("GenerateToken error: %v\n", err)
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
@@ -162,9 +209,9 @@ func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 		"token": token,
 		"user": map[string]string{
 			"id":      userID,
-			"email":   googleUser.Email,
-			"name":    googleUser.Name,
-			"picture": googleUser.Picture,
+			"email":   g.Email,
+			"name":    g.Name,
+			"picture": g.Picture,
 		},
 	})
 }

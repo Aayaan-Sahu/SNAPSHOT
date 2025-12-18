@@ -34,6 +34,9 @@ func main() {
 	// public routes
 	http.HandleFunc("/auth/login", handleLogin)
 	http.HandleFunc("/auth/callback", handleCallback)
+	http.HandleFunc("/auth/google", handleGoogleLogin)
+
+	http.HandleFunc("/api/ping", handlePing)
 
 	// protected routes
 	http.Handle("/api/me", auth.RequireAuth(http.HandlerFunc(handleMe)))
@@ -62,4 +65,13 @@ func main() {
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func handlePing(w http.ResponseWriter, r *http.Request) {
+	// Log the headers so we can see if the Token arrived (Test 2)
+	fmt.Printf("[PING] Request received from: %s\n", r.RemoteAddr)
+	fmt.Printf("[PING] Auth Header: %s\n", r.Header.Get("Authorization"))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"status": "ok", "message": "Pong!"}`))
 }

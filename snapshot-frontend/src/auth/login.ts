@@ -1,4 +1,5 @@
 import { client, setAuthToken } from "../api/client";
+import { ENDPOINTS } from "../api/endpoints";
 
 type GoogleExchangeResponse = {
   token: string;
@@ -11,7 +12,7 @@ type GoogleExchangeResponse = {
 };
 
 export async function loginWithGoogleIdToken(idToken: string) {
-  const res = await client.post<GoogleExchangeResponse>("/auth/google", {
+  const res = await client.post<GoogleExchangeResponse>(ENDPOINTS.AUTH.GOOGLE_MOBILE, {
     idToken,
   });
 

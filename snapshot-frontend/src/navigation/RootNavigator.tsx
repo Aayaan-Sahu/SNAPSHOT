@@ -1,8 +1,12 @@
-import React from "react";
 import { View, ActivityIndicator } from "react-native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import { AuthScreen } from "../screens/AuthScreen";
-import { HomeScreen } from "../screens/HomeScreen";
+import { HomeScreen } from "../features/feed/HomeScreen";
+import { GroupSlideshowScreen } from "../features/feed/GroupSlideshowScreen";
+import { RootStackParamList } from "./types";
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const { user, isLoading } = useAuth();
@@ -15,5 +19,27 @@ export function RootNavigator() {
     );
   }
 
-  return user ? <HomeScreen /> : <AuthScreen />;
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {user ? (
+        <>
+          <Stack.Screen 
+            name="Home" 
+            component={HomeScreen} 
+          />
+          <Stack.Screen 
+            name="GroupSlideshow" 
+            component={GroupSlideshowScreen}
+            options={{ headerShown: true, title: "Group Memory" }} 
+          />
+        </>
+      ) : (
+        <Stack.Screen 
+          name="Auth" 
+          component={AuthScreen} 
+          options={{ animationTypeForReplace: 'pop' }}
+        />
+      )}
+    </Stack.Navigator>
+  );
 }

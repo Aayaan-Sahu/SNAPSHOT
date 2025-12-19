@@ -4,6 +4,7 @@ import { restoreSession } from "../auth/session";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { loginWithGoogleIdToken } from "../auth/login";
 import { client, deleteAuthToken } from "../api/client";
+import { ENDPOINTS } from "../api/endpoints";
 
 type User = {
   id: string;
@@ -48,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await loginWithGoogleIdToken(idToken);
 
-      const me = await client.get("/api/me");
+      const me = await client.get(ENDPOINTS.USER.ME);
       setUser(me.data);
     } catch (error) {
       console.error("Sign in failed", error);

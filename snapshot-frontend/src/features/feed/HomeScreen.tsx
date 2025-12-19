@@ -3,11 +3,13 @@ import {
   View,
   Text,
   FlatList,
-  Button,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView
+  SafeAreaView,
+  Pressable,
+  Platform,
+  Button,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -17,6 +19,7 @@ import { Group } from "../../api/types";
 import { GroupCard } from "../../components/GroupCard";
 import { useAuth } from "../../context/AuthContext";
 import { RootStackParamList } from "../../navigation/types";
+import { NotificationsService } from "../../services/notifications";
 
 export const HomeScreen = () => {
   const { user, signOut } = useAuth();
@@ -24,8 +27,8 @@ export const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Typed navigation hook
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const loadGroups = async () => {
     try {
@@ -41,6 +44,8 @@ export const HomeScreen = () => {
 
   useEffect(() => {
     loadGroups();
+
+    NotificationsService.requestPermissions();
   }, []);
 
   const onRefresh = useCallback(() => {
@@ -64,38 +69,169 @@ export const HomeScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Groups</Text>
-        <Button title="Logout" onPress={signOut} color="red" />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.largeTitle}>Groups</Text>
+          </View>
+
+          <Pressable
+            onPress={signOut}
+            hitSlop={10}
+            style={({ pressed }) => [styles.textButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.logoutText}>Log Out</Text>
+          </Pressable>
+        </View>
+
+      <View style={{ padding: 10, backgroundColor: "#e1f5fe" }}>
+        <Button 
+          title="🔔 Test Notification" 
+          onPress={async () => {
+            await NotificationsService.testTrigger();
+            await NotificationsService.scheduleHourlyTriggers();
+          }} 
+        />
       </View>
 
-      <FlatList
-        data={groups}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <GroupCard group={item} onPress={handleGroupPress} />
-        )}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>You haven't joined any groups yet.</Text>
-          </View>
-        }
-      />
+        {/* Inset Grouped List Feel */}
+        <FlatList
+          data={groups}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.cardWrap}>
+              <GroupCard group={item} onPress={handleGroupPress} />
+            </View>
+          )}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No groups yet</Text>
+              <Text style={styles.emptyText}>
+                Create or join a group to start sharing.
+              </Text>
+            </View>
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 };
 
+const IOS_BG = "#F2F2F7"; // iOS grouped background
+const IOS_SEPARATOR = "#C6C6C8"; // hairline-ish separator
+const IOS_LABEL_SECONDARY = "#6D6D72";
+const IOS_DESTRUCTIVE = "#FF3B30"; // iOS system red
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { padding: 20, backgroundColor: "white", borderBottomWidth: 1, borderBottomColor: "#eee", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  headerTitle: { fontSize: 24, fontWeight: "bold" },
-  listContent: { padding: 16 },
-  emptyState: { padding: 40, alignItems: "center" },
-  emptyText: { color: "#888", fontSize: 16 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: IOS_BG
+  },
+  container: {
+    flex: 1,
+    backgroundColor: IOS_BG
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: IOS_BG
+  },
+
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: IOS_BG,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: IOS_SEPARATOR,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between"
+  },
+  largeTitle: {
+    fontSize: 34,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+    color: "#000",
+    ...(Platform.OS === "ios" ? { fontFamily: "System" } : null)
+  },
+  subtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: IOS_LABEL_SECONDARY
+  },
+
+  textButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10
+  },
+  pressed: {
+    opacity: 0.6
+  },
+  logoutText: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: IOS_DESTRUCTIVE
+  },
+
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 24
+  },
+
+  // Wrap each GroupCard so it reads like an inset grouped cell/card
+  cardWrap: {
+    marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 }
+      },
+      android: {
+        elevation: 3
+      }
+    })
+  },
+
+  emptyState: {
+    marginTop: 40,
+    padding: 24,
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 5 }
+      },
+      android: { elevation: 2 }
+    })
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#000"
+  },
+  emptyText: {
+    marginTop: 6,
+    fontSize: 15,
+    color: IOS_LABEL_SECONDARY,
+    textAlign: "center",
+    lineHeight: 20
+  }
 });

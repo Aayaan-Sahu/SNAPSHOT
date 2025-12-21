@@ -24,3 +24,21 @@ export async function getOutgoingFriendRequesets(): Promise<PendingRequest[]> {
   }
   return response.data.outgoing_requests;
 }
+
+export async function acceptFriendRequest(target_id: string): Promise<void> {
+  await client.post(
+    ENDPOINTS.FRIENDS.ACCEPT,
+    {
+      target_id: target_id,
+    }
+  );
+}
+
+export async function rejectFriendRequest(target_id: string): Promise<void> {
+  await client.post(
+    ENDPOINTS.FRIENDS.REJECT,
+    {
+      target_id: target_id,
+    }
+  )
+}

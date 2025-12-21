@@ -11,7 +11,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CustomSegmentedControl } from "./components/CustomSegmentedControl";
 import { RequestList } from "./components/RequestList";
-import { getIncomingFriendRequests, getOutgoingFriendRequesets } from "./api";
+import {
+  getIncomingFriendRequests,
+  getOutgoingFriendRequesets,
+  acceptFriendRequest,
+  rejectFriendRequest,
+} from "./api";
 import { PendingRequest } from "../../api/types";
 
 export const FriendsScreen = () => {
@@ -47,8 +52,26 @@ export const FriendsScreen = () => {
     loadData();
   }, []);
 
-  const handleAccept = (id: string) => console.log("Accept:", id);
-  const handleDecline = (id: string) => console.log("Decline:", id);
+  const handleAccept = async (id: string) => {
+    try {
+      await acceptFriendRequest(id);
+      setIncoming((prev) => prev.filter((req) => req.id !== id));
+    } catch (err) {
+      console.error("Failed to accept friend:", err);
+      alert("Could not accept friend request. Please try again.");
+    }
+  };
+
+  const handleDecline = async (id: string) => {
+    try {
+      await rejectFriendRequest(id);
+      setIncoming((prev) => prev.filter((req) => req.id !== id));
+    } catch (err) {
+      console.error("Failed to decline friend request:", err);
+      alert("Could not decline friend request. Please try again.");
+    }
+  };
+
   const handleCancel = (id: string) => console.log("Cancel:", id);
 
   const renderContent = () => {
@@ -63,7 +86,7 @@ export const FriendsScreen = () => {
     switch (activeTab) {
       case 0:
         return (
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           >

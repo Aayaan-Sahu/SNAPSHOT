@@ -186,3 +186,156 @@ func handleListFriends(w http.ResponseWriter, r *http.Request) {
 		"friends": friends,
 	})
 }
+
+type FriendRejectInput struct {
+	TargetID string `json:"target_id"`
+}
+
+func handleRejectFriend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rejectorID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req FriendRejectInput
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+	req.TargetID = strings.TrimSpace(req.TargetID)
+	if req.TargetID == "" {
+		http.Error(w, "target_id is required", http.StatusBadRequest)
+		return
+	}
+
+	userA, userB := rejectorID, req.TargetID
+	if rejectorID > req.TargetID {
+		userA, userB = req.TargetID, rejectorID
+	}
+
+	commandTag, err := db.Exec(r.Context(),
+		`DELETE FROM friendships
+		 WHERE user_a_id = $1 AND user_b_id = $2
+		 AND requester_id != $3`,
+		userA, userB, rejectorID,
+	)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		http.Error(w, "No pending incoming request found from this user", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "friendship_rejected",
+	})
+}
+
+type PendingRequest struct {
+	ID      string `json:"id"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
+}
+
+func handleListIncomingFriendRequests(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	query := `
+		SELECT u.id, u.email, u.name, u.picture
+		FROM friendships f
+		JOIN users u ON u.id = f.requester_id
+		WHERE f.status = 'pending'
+			AND (f.user_a_id = $1 OR f.user_b_id = $1)
+			AND f.requester_id != $1
+		ORDER by lower(coalesce(u.name, u.email)) ASC
+	`
+
+	rows, err := db.Query(r.Context(), query, userID)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	requests := make([]PendingRequest, 0)
+	for rows.Next() {
+		var pr PendingRequest
+		if err := rows.Scan(&pr.ID, &pr.Email, &pr.Name, &pr.Picture); err != nil {
+			continue
+		}
+		requests = append(requests, pr)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"incoming_requests": requests,
+	})
+}
+
+func handleListOutgoingFriendRequests(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	query := `
+		SELECT u.id, u.email, u.name, u.picture
+		FROM friendships f
+		JOIN users u ON u.id = CASE
+			WHEN f.user_a_id = $1 THEN f.user_b_id
+			ELSE f.user_a_id
+		END
+		WHERE f.status = 'pending'
+			AND f.requester_id = $1
+			AND (f.user_a_id = $1 OR f.user_b_id = $1)	
+		ORDER BY lower(coalesce(u.name, u.email)) ASC
+	`
+
+	rows, err := db.Query(r.Context(), query, userID)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	requests := make([]PendingRequest, 0)
+	for rows.Next() {
+		var pr PendingRequest
+		if err := rows.Scan(&pr.ID, &pr.Email, &pr.Name, &pr.Picture); err != nil {
+			continue
+		}
+		requests = append(requests, pr)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"outgoing_requests": requests,
+	})
+}

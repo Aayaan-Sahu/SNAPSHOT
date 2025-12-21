@@ -9,11 +9,11 @@ import (
 
 	"github.com/Aayaan-Sahu/SNAPSHOT/internal/auth"
 	"github.com/Aayaan-Sahu/SNAPSHOT/internal/storage"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
-var db *pgx.Conn
+var db *pgxpool.Pool
 var s3Client *storage.S3Service
 
 func main() {
@@ -24,11 +24,11 @@ func main() {
 	auth.Init()
 
 	var err error
-	db, err = pgx.Connect(context.Background(), os.Getenv("DB_URL"))
+	db, err = pgxpool.New(context.Background(), os.Getenv("DB_URL"))
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
-	defer db.Close(context.Background())
+	defer db.Close()
 	fmt.Println("Connected to Postgres!")
 
 	// public routes
@@ -40,6 +40,7 @@ func main() {
 
 	// protected routes
 	http.Handle("/api/me", auth.RequireAuth(http.HandlerFunc(handleMe)))
+	http.Handle("/api/user/status", auth.RequireAuth(http.HandlerFunc(handleGetUserStatus)))
 
 	http.Handle("/api/groups", auth.RequireAuth(http.HandlerFunc(handleGroups)))
 	http.Handle("/api/groups/join", auth.RequireAuth(http.HandlerFunc(handleJoinGroup)))
@@ -49,6 +50,9 @@ func main() {
 	http.Handle("/api/friends", auth.RequireAuth(http.HandlerFunc(handleListFriends)))
 	http.Handle("/api/friends/request", auth.RequireAuth(http.HandlerFunc(handleFriendRequest)))
 	http.Handle("/api/friends/accept", auth.RequireAuth(http.HandlerFunc(handleAcceptFriend)))
+	http.Handle("/api/friends/reject", auth.RequireAuth(http.HandlerFunc(handleRejectFriend)))
+	http.Handle("/api/friends/requests/incoming", auth.RequireAuth(http.HandlerFunc(handleListIncomingFriendRequests)))
+	http.Handle("/api/friends/requests/outgoing", auth.RequireAuth(http.HandlerFunc(handleListOutgoingFriendRequests)))
 
 	s3Client, err = storage.NewS3Service()
 	if err != nil {

@@ -163,6 +163,7 @@ func handleListFriends(w http.ResponseWriter, r *http.Request) {
 		END
 		WHERE (f.user_a_id = $1 OR f.user_b_id = $1)
 		AND f.status = 'accepted'
+		ORDER BY lower(u.name) ASC
 	`
 
 	rows, err := db.Query(r.Context(), query, userID)

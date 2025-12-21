@@ -51,3 +51,27 @@ export async function cancelFriendRequest(target_id: string): Promise<void> {
     }
   );
 }
+
+export interface Friend {
+  id: string;
+  name: string;
+  picture: string;
+}
+
+interface FriendsResponse {
+  friends: Friend[];
+}
+
+export async function getFriends(): Promise<Friend[]> {
+  const response = await client.get<FriendsResponse>(ENDPOINTS.FRIENDS.LIST);
+  return response.data.friends;
+}
+
+export async function sendFriendRequest(targetEmail: string): Promise<void> {
+  await client.post(
+    ENDPOINTS.FRIENDS.REQUEST,
+    {
+      target_email: targetEmail,
+    }
+  );
+}

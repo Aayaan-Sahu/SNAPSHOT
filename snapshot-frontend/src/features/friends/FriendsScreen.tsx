@@ -6,17 +6,25 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
+  Alert,
+  Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CustomSegmentedControl } from "./components/CustomSegmentedControl";
 import { RequestList } from "./components/RequestList";
+import { FriendSearchInput } from "./components/FriendSearchInput";
+import { FriendList } from "./components/FriendList";
 import {
   getIncomingFriendRequests,
   getOutgoingFriendRequesets,
   acceptFriendRequest,
   rejectFriendRequest,
   cancelFriendRequest,
+  getFriends,
+  sendFriendRequest,
+  Friend,
 } from "./api";
 import { PendingRequest } from "../../api/types";
 
@@ -27,17 +35,20 @@ export const FriendsScreen = () => {
 
   const [incoming, setIncoming] = useState<PendingRequest[]>([]);
   const [outgoing, setOutgoing] = useState<PendingRequest[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
 
   const loadData = async () => {
     try {
-      const [incomingData, outgoingData] = await Promise.all([
+      const [incomingData, outgoingData, friendsData] = await Promise.all([
         getIncomingFriendRequests(),
         getOutgoingFriendRequesets(),
+        getFriends(),
       ]);
       setIncoming(incomingData);
       setOutgoing(outgoingData);
+      setFriends(friendsData);
     } catch (err) {
-      console.error("Failed to load friend requests:", err);
+      console.error("Failed to load friend data:", err);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -53,10 +64,30 @@ export const FriendsScreen = () => {
     loadData();
   }, []);
 
+  const handleSendRequest = async (email: string): Promise<boolean> => {
+    try {
+      await sendFriendRequest(email);
+      const newOutgoing = await getOutgoingFriendRequesets();
+      setOutgoing(newOutgoing);
+      return true;
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        Alert.alert("User Not Found", "No user exists with that email address.");
+      } else if (err.response?.status === 409) {
+        Alert.alert("Existing Request", "You are already friends or have a pending request");
+      } else {
+        Alert.alert("Error", "Could not send friend request.");
+      }
+      return false;
+    }
+  };
+
   const handleAccept = async (id: string) => {
     try {
       await acceptFriendRequest(id);
       setIncoming((prev) => prev.filter((req) => req.id !== id));
+      const newFriends = await getFriends();
+      setFriends(newFriends);
     } catch (err) {
       console.error("Failed to accept friend:", err);
       alert("Could not accept friend request. Please try again.");
@@ -95,12 +126,16 @@ export const FriendsScreen = () => {
     switch (activeTab) {
       case 0:
         return (
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          >
-            <AddFriendPlaceholder />
-          </ScrollView>
+          // <ScrollView
+          //   contentContainerStyle={styles.scrollContent}
+          //   refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          // >
+          //   <AddFriendPlaceholder />
+          // </ScrollView>
+          <View style={{ flex: 1}}>
+            <FriendSearchInput onSendRequest={handleSendRequest} />
+            <FriendList data={friends} />
+          </View>
         );
       case 1:
         return (
@@ -141,9 +176,11 @@ export const FriendsScreen = () => {
         onChange={setActiveTab}
       />
 
-      <View style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}>
         {renderContent()}
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

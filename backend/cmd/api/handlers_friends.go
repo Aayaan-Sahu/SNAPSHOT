@@ -242,6 +242,62 @@ func handleRejectFriend(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type FriendCancelInput struct {
+	TargetID string `json:"target_id"`
+}
+
+func handleCancelFriendRequest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	cancelerID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req FriendCancelInput
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+	req.TargetID = strings.TrimSpace(req.TargetID)
+	if req.TargetID == "" {
+		http.Error(w, "target_id is required", http.StatusBadRequest)
+		return
+	}
+
+	userA, userB := cancelerID, req.TargetID
+	if cancelerID > req.TargetID {
+		userA, userB = req.TargetID, cancelerID
+	}
+
+	commandTag, err := db.Exec(r.Context(),
+		`DELETE FROM friendships
+		 WHERE user_a_id = $1 AND user_b_id = $2
+		 AND status = 'pending'
+		 AND requester_id = $3`,
+		userA, userB, cancelerID,
+	)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		http.Error(w, "No pending outgoing request found to this user", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "request_canceled",
+	})
+}
+
 type PendingRequest struct {
 	ID      string `json:"id"`
 	Email   string `json:"email"`

@@ -23,6 +23,7 @@ export const ENDPOINTS = {
     REQUEST: "/api/friends/request",
     ACCEPT: "/api/friends/accept",
     REJECT: "/api/friends/reject",
+    CANCEL: "/api/friends/cancel",
     INCOMING: "/api/friends/requests/incoming",
     OUTGOING: "/api/friends/requests/outgoing",
   },

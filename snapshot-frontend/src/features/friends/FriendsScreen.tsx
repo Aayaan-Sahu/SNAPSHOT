@@ -16,6 +16,7 @@ import {
   getOutgoingFriendRequesets,
   acceptFriendRequest,
   rejectFriendRequest,
+  cancelFriendRequest,
 } from "./api";
 import { PendingRequest } from "../../api/types";
 
@@ -72,7 +73,15 @@ export const FriendsScreen = () => {
     }
   };
 
-  const handleCancel = (id: string) => console.log("Cancel:", id);
+  const handleCancel = async (id: string) => {
+    try {
+      await cancelFriendRequest(id);
+      setOutgoing((prev) => prev.filter((req) => req.id !== id))
+    } catch (err) {
+      console.error("Failed to cancel request:", err);
+      alert("Could not cancel friend request");
+    }
+  };
 
   const renderContent = () => {
     if (isLoading) {

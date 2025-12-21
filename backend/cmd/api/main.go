@@ -51,6 +51,7 @@ func main() {
 	http.Handle("/api/friends/request", auth.RequireAuth(http.HandlerFunc(handleFriendRequest)))
 	http.Handle("/api/friends/accept", auth.RequireAuth(http.HandlerFunc(handleAcceptFriend)))
 	http.Handle("/api/friends/reject", auth.RequireAuth(http.HandlerFunc(handleRejectFriend)))
+	http.Handle("/api/friends/cancel", auth.RequireAuth(http.HandlerFunc(handleCancelFriendRequest)))
 	http.Handle("/api/friends/requests/incoming", auth.RequireAuth(http.HandlerFunc(handleListIncomingFriendRequests)))
 	http.Handle("/api/friends/requests/outgoing", auth.RequireAuth(http.HandlerFunc(handleListOutgoingFriendRequests)))
 

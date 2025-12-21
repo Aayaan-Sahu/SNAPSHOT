@@ -40,5 +40,14 @@ export async function rejectFriendRequest(target_id: string): Promise<void> {
     {
       target_id: target_id,
     }
-  )
+  );
+}
+
+export async function cancelFriendRequest(target_id: string): Promise<void> {
+  await client.post(
+    ENDPOINTS.FRIENDS.CANCEL,
+    {
+      target_id: target_id,
+    }
+  );
 }

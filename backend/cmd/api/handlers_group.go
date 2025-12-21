@@ -13,7 +13,8 @@ import (
 )
 
 type CreateGroupRequest struct {
-	Name string `json:"name"`
+	Name    string   `json:"name"`
+	Members []string `json:"members"`
 }
 
 type Group struct {
@@ -95,7 +96,6 @@ func createGroup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Group name is required", http.StatusBadRequest)
 		return
 	}
-
 	if len(req.Name) > 100 {
 		http.Error(w, "Group name too long (max 100 characters", http.StatusBadRequest)
 		return
@@ -136,6 +136,23 @@ func createGroup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to join group", http.StatusInternalServerError)
 		return
+	}
+
+	for _, memberID := range req.Members {
+		if memberID == userID {
+			continue
+		}
+
+		_, err := tx.Exec(r.Context(),
+			`INSERT INTO group_members (group_id, user_id) VALUES ($1, $2)
+			 ON CONFLICT DO NOTHING`,
+			groupID, memberID,
+		)
+		if err != nil {
+			log.Printf("Failed to add member %s: %v", memberID, err)
+			http.Error(w, "Failed to add members", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// handle all errors

@@ -6,23 +6,28 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
   Pressable,
   Platform,
   Button,
+  TouchableOpacity,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
-import { fetchUserGroups } from "./api";
-import { Group } from "../../api/types";
-import { GroupCard } from "../../components/GroupCard";
 import { useAuth } from "../../context/AuthContext";
-import { RootStackParamList } from "../../navigation/types";
-import { NotificationsService } from "../../services/notifications";
-import { useSubmissionWindow } from "../camera/hooks/useSubmissionWindow";
-import { CameraTrigger } from "../camera/components/CameraTrigger";
 import { useSnapshot } from "../../context/SnapshotContext";
+import { useSubmissionWindow } from "../camera/hooks/useSubmissionWindow";
+import { NotificationsService } from "../../services/notifications";
+
+import { GroupCard } from "../../components/GroupCard";
+import { CameraTrigger } from "../camera/components/CameraTrigger";
+
+import { Group } from "../../api/types";
+import { fetchUserGroups } from "./api";
+import { RootStackParamList } from "../../navigation/types";
+import { CreateGroupModal } from "./CreateGroupModal";
 
 export const HomeScreen = () => {
   const { user, signOut } = useAuth();
@@ -33,6 +38,7 @@ export const HomeScreen = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isModalVisible, setModalVisible] = useState(false);
 
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -70,6 +76,10 @@ export const HomeScreen = () => {
     loadGroups();
   }, []);
 
+  const handleGroupCreated = () => {
+    onRefresh();
+  }
+
   const handleGroupPress = (group: Group) => {
     navigation.navigate("GroupSlideshow", {
       groupId: group.id,
@@ -93,6 +103,13 @@ export const HomeScreen = () => {
         <View style={styles.header}>
           <View>
             <Text style={styles.largeTitle}>Groups</Text>
+
+            <TouchableOpacity 
+             onPress={() => setModalVisible(true)} 
+             style={styles.iconBtn}
+           >
+             <Ionicons name="add-circle-outline" size={28} color="#007AFF" />
+           </TouchableOpacity>
           </View>
 
           <Button title="Friends" onPress={() => navigation.navigate("Friends")} />
@@ -145,6 +162,13 @@ export const HomeScreen = () => {
         {isWindowOpen && !hasPosted && (
           <CameraTrigger onPress={handleCameraPress} />
         )}
+
+        {/* Create Group Modal */}
+        <CreateGroupModal
+          visible={isModalVisible}
+          onClose={() => setModalVisible(false)}
+          onSuccess={handleGroupCreated}
+        />
       </View>
     </SafeAreaView>
   );
@@ -261,5 +285,8 @@ const styles = StyleSheet.create({
     color: IOS_LABEL_SECONDARY,
     textAlign: "center",
     lineHeight: 20
-  }
+  },
+  iconBtn: {
+    padding: 4,
+  },
 });

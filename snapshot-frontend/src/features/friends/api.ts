@@ -75,3 +75,14 @@ export async function sendFriendRequest(targetEmail: string): Promise<void> {
     }
   );
 }
+
+export async function removeFriend(targetId: string): Promise<void> {
+  await client.delete(
+    ENDPOINTS.FRIENDS.REMOVE,
+    {
+      data: {
+        target_id: targetId
+      }
+    }
+  );
+}

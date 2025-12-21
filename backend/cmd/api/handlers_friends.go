@@ -396,3 +396,55 @@ func handleListOutgoingFriendRequests(w http.ResponseWriter, r *http.Request) {
 		"outgoing_requests": requests,
 	})
 }
+
+type FriendRemoveInput struct {
+	TargetID string `json:"target_id"`
+}
+
+func handleRemoveFriend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	}
+
+	var req FriendRemoveInput
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+	if req.TargetID == "" {
+		http.Error(w, "target_id is required", http.StatusBadRequest)
+		return
+	}
+
+	userA, userB := userID, req.TargetID
+	if userID > req.TargetID {
+		userA, userB = req.TargetID, userID
+	}
+
+	result, err := db.Exec(r.Context(),
+		`DELETE FROM friendships
+		 WHERE user_a_id = $1 AND user_b_id = $2
+		 AND status = 'accepted'`,
+		userA, userB,
+	)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	if result.RowsAffected() == 0 {
+		http.Error(w, "Friendship not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "friend_removed",
+	})
+}

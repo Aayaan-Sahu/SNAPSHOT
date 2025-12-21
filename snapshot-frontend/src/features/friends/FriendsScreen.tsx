@@ -25,6 +25,7 @@ import {
   getFriends,
   sendFriendRequest,
   Friend,
+  removeFriend,
 } from "./api";
 import { PendingRequest } from "../../api/types";
 
@@ -114,6 +115,16 @@ export const FriendsScreen = () => {
     }
   };
 
+  const handleRemoveFriend = async (id: string) => {
+    try {
+      await removeFriend(id);
+      setFriends((prev) => prev.filter((f) => f.id !== id));
+    } catch (err) {
+      console.error("Failed to remove friend:", err);
+      Alert.alert("Error", "Could not remove friend");
+    }
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -126,15 +137,9 @@ export const FriendsScreen = () => {
     switch (activeTab) {
       case 0:
         return (
-          // <ScrollView
-          //   contentContainerStyle={styles.scrollContent}
-          //   refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          // >
-          //   <AddFriendPlaceholder />
-          // </ScrollView>
           <View style={{ flex: 1}}>
             <FriendSearchInput onSendRequest={handleSendRequest} />
-            <FriendList data={friends} />
+            <FriendList data={friends} onRemove={handleRemoveFriend} />
           </View>
         );
       case 1:

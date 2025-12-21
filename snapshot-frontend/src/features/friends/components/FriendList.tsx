@@ -1,12 +1,29 @@
 import React from "react";
-import { View, Text, FlatList, StyleSheet, Image } from "react-native";
+import { View, Text, FlatList, StyleSheet, Image, Alert, TouchableOpacity } from "react-native";
 import { Friend } from "../api";
+import { Ionicons } from "@expo/vector-icons";
 
 interface Props {
   data: Friend[];
+  onRemove: (id: string) => void;
 }
 
-export const FriendList = ({ data }: Props) => {
+export const FriendList = ({ data, onRemove }: Props) => {
+  const handlePressRemove = (id: string, name: string) => {
+    Alert.alert(
+      "Remove Friend",
+      `Are you sure you want to remove ${name}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Remove", 
+          style: "destructive", 
+          onPress: () => onRemove(id) 
+        }
+      ]
+    );
+  }
+
   return (
     <FlatList
       data={data}
@@ -20,11 +37,20 @@ export const FriendList = ({ data }: Props) => {
       }
       renderItem={({ item }) => (
         <View style={styles.itemContainer}>
-          <Image 
-            source={{ uri: item.picture || "https://ui-avatars.com/api/?name=" + item.name }} 
-            style={styles.avatar} 
+          <Image
+            source={{ uri: item.picture || "https://ui-avatars.com/api/?name=" + item.name }}
+            style={styles.avatar}
           />
           <Text style={styles.name}>{item.name}</Text>
+
+          <View style={{ flex: 1 }} />
+
+          <TouchableOpacity 
+            onPress={() => handlePressRemove(item.id, item.name)}
+            style={styles.removeBtn}
+          >
+            <Ionicons name="close-circle-outline" size={24} color="#ff3b30" />
+          </TouchableOpacity>
         </View>
       )}
     />
@@ -67,5 +93,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#999",
     marginTop: 20,
-  }
+  },
+  removeBtn: {
+    padding: 4,
+  },
 });

@@ -54,6 +54,7 @@ func main() {
 	http.Handle("/api/friends/cancel", auth.RequireAuth(http.HandlerFunc(handleCancelFriendRequest)))
 	http.Handle("/api/friends/requests/incoming", auth.RequireAuth(http.HandlerFunc(handleListIncomingFriendRequests)))
 	http.Handle("/api/friends/requests/outgoing", auth.RequireAuth(http.HandlerFunc(handleListOutgoingFriendRequests)))
+	http.Handle("/api/friends/remove", auth.RequireAuth(http.HandlerFunc(handleRemoveFriend)))
 
 	s3Client, err = storage.NewS3Service()
 	if err != nil {

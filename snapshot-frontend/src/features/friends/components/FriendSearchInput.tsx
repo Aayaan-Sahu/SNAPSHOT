@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { 
-  View, 
-  TextInput, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  StyleSheet, 
-  Alert 
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  Alert
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -19,7 +19,7 @@ export const FriendSearchInput = ({ onSendRequest }: Props) => {
 
   const handlePress = async () => {
     if (!email.trim()) return;
-    
+
     setLoading(true);
     const success = await onSendRequest(email);
     setLoading(false);
@@ -44,18 +44,18 @@ export const FriendSearchInput = ({ onSendRequest }: Props) => {
         returnKeyType="send"
         onSubmitEditing={handlePress}
       />
-      <TouchableOpacity 
-        onPress={handlePress} 
+      <TouchableOpacity
+        onPress={handlePress}
         disabled={loading || !email.trim()}
         style={styles.sendBtn}
       >
         {loading ? (
           <ActivityIndicator size="small" color="#007AFF" />
         ) : (
-          <Ionicons 
-            name="arrow-forward-circle" 
-            size={28} 
-            color={email.trim() ? "#007AFF" : "#ccc"} 
+          <Ionicons
+            name="arrow-forward-circle"
+            size={28}
+            color={email.trim() ? "#007AFF" : "#ccc"}
           />
         )}
       </TouchableOpacity>

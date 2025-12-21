@@ -26,6 +26,7 @@ export const ENDPOINTS = {
     CANCEL: "/api/friends/cancel",
     INCOMING: "/api/friends/requests/incoming",
     OUTGOING: "/api/friends/requests/outgoing",
+    REMOVE: "/api/friends/remove",
   },
 
   PHOTOS: {

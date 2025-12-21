@@ -10,3 +10,6 @@
 # AUTHENTICATION
 - passing token in query string is not ideal
 - on the frontend, what happens when JWT expires?
+
+# NOTIFICATIONS
+- move notifications up the tree to root navigator that way they can still get notifications if the home screen is unmounted

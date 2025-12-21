@@ -5,6 +5,8 @@ import { AuthScreen } from "../screens/AuthScreen";
 import { HomeScreen } from "../features/feed/HomeScreen";
 import { GroupSlideshowScreen } from "../features/feed/GroupSlideshowScreen";
 import { RootStackParamList } from "./types";
+import { CameraScreen } from "../features/camera/CameraScreen";
+import { FriendsScreen } from "../features/friends/FriendsScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -31,6 +33,15 @@ export function RootNavigator() {
             name="GroupSlideshow" 
             component={GroupSlideshowScreen}
             options={{ headerShown: true, title: "Group Memory" }} 
+          />
+          <Stack.Screen 
+            name="Friends" 
+            component={FriendsScreen} 
+          />
+          <Stack.Screen 
+            name="Camera" 
+            component={CameraScreen} 
+            options={{ headerShown: false }}
           />
         </>
       ) : (

@@ -20,9 +20,16 @@ import { GroupCard } from "../../components/GroupCard";
 import { useAuth } from "../../context/AuthContext";
 import { RootStackParamList } from "../../navigation/types";
 import { NotificationsService } from "../../services/notifications";
+import { useSubmissionWindow } from "../camera/hooks/useSubmissionWindow";
+import { CameraTrigger } from "../camera/components/CameraTrigger";
+import { useSnapshot } from "../../context/SnapshotContext";
 
 export const HomeScreen = () => {
   const { user, signOut } = useAuth();
+
+  const { isWindowOpen } = useSubmissionWindow();
+  const { hasPosted } = useSnapshot();
+
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,10 +49,20 @@ export const HomeScreen = () => {
     }
   };
 
+  const handleCameraPress = () => {
+    navigation.navigate("Camera");
+  }
+
   useEffect(() => {
     loadGroups();
 
     NotificationsService.requestPermissions();
+    const responseListener = NotificationsService.setupResponseListener((response) => {
+      console.log("User tapped notification! navigating to...", response.notification.request.content.data.screen);
+    });
+    return () => {
+      responseListener.remove();
+    };
   }, []);
 
   const onRefresh = useCallback(() => {
@@ -71,10 +88,14 @@ export const HomeScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
             <Text style={styles.largeTitle}>Groups</Text>
           </View>
+
+          <Button title="Friends" onPress={() => navigation.navigate("Friends")} />
 
           <Pressable
             onPress={signOut}
@@ -85,17 +106,19 @@ export const HomeScreen = () => {
           </Pressable>
         </View>
 
-      <View style={{ padding: 10, backgroundColor: "#e1f5fe" }}>
-        <Button 
-          title="🔔 Test Notification" 
-          onPress={async () => {
-            await NotificationsService.testTrigger();
-            await NotificationsService.scheduleHourlyTriggers();
-          }} 
-        />
-      </View>
+        {/* TEST NOTIFICATION */}
+        <View style={{ padding: 10, backgroundColor: "#e1f5fe" }}>
+          <Button
+            title="🔔 Test Notification"
+            onPress={async () => {
+              await NotificationsService.testTrigger();
+              await NotificationsService.scheduleHourlyTriggers();
+            }}
+          />
+        </View>
 
-        {/* Inset Grouped List Feel */}
+        {/* DISPLAY GROUPS */}
+        {/* - Goes through every entry in groups and displays a GroupCard with its data passed in */}
         <FlatList
           data={groups}
           keyExtractor={(item) => item.id}
@@ -117,6 +140,11 @@ export const HomeScreen = () => {
             </View>
           }
         />
+
+        {/* Camera Button */}
+        {isWindowOpen && !hasPosted && (
+          <CameraTrigger onPress={handleCameraPress} />
+        )}
       </View>
     </SafeAreaView>
   );

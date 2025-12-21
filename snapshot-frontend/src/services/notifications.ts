@@ -1,5 +1,5 @@
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { EventSubscription } from "expo-notifications";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -34,6 +34,7 @@ export const NotificationsService = {
         title: "📸 Time to Snapshot!",
         body: "The 10-minute window is open. Capture your moment now.",
         sound: true,
+        data: { screen: "Home" },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
@@ -45,11 +46,21 @@ export const NotificationsService = {
     console.log("🔔 Hourly notifications are scheduled.");
   },
 
+  setupResponseListener: (
+    onResponse: (response: Notifications.NotificationResponse) => void
+  ): EventSubscription => {
+    return Notifications.addNotificationResponseReceivedListener((response) => {
+      console.log("Notification Tapped:", response.notification.request.content.data);
+      onResponse(response);
+    });
+  },
+
   testTrigger: async () => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Test",
         body: "it's working",
+        data: { screen: "Home" },
       },
       trigger: null,
     })

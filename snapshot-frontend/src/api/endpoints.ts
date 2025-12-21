@@ -7,6 +7,7 @@ export const ENDPOINTS = {
 
   USER: {
     ME: "/api/me",
+    STATUS: "/api/user/status",
   },
 
   GROUPS: {
@@ -20,7 +21,15 @@ export const ENDPOINTS = {
   FRIENDS: {
     LIST: "/api/friends",
     REQUEST: "/api/friends/request",
-    ACEPT: "/api/friends/accept",
+    ACCEPT: "/api/friends/accept",
+    INCOMING: "/api/friends/requests/incoming",
+    OUTGOING: "/api/friends/requests/outgoing",
+  },
+
+  PHOTOS: {
+    BASE: "/api/photos",
+    SLIDESHOW: "/api/photos/slideshow",
+    UPLOAD_URL: "/api/photos/upload-url",
   },
 
   SYSTEM: {

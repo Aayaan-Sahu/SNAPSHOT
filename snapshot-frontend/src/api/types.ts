@@ -3,3 +3,10 @@ export interface Group {
     owner_id: string;
     name: string;
 }
+
+export interface PendingRequest {
+    id: string;
+    email: string;
+    name: string;
+    picture: string;
+}

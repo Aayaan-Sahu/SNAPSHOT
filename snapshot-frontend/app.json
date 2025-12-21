@@ -35,6 +35,13 @@
     },
     "plugins": [
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Snapshot to access your camera to capture daily moments.",
+          "microphonePermission": "Allow Snapshot to access your microphone for video."
+        }
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.591329119418-q974oq4g60l9tojtacma5ukg1gajbmv7"

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode, Children } from "react";
-import { useSubmissionWindow } from "../features/camera/hooks/useSubmissionWindow";
+
 import { getUserStatus } from "../features/camera/api";
+import { useSubmissionWindow } from "../features/camera/hooks/useSubmissionWindow";
 
 interface SnapshotContextType {
   hasPosted: boolean;

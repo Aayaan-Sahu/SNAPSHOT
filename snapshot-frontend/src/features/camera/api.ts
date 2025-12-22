@@ -1,11 +1,6 @@
 import { client } from "../../api/client";
 import { ENDPOINTS } from "../../api/endpoints";
-
-export interface UploadConfig {
-  upload_url: string;
-  key: string;
-  slot_timestamp: string;
-}
+import { UploadConfig } from "../../api/types";
 
 export async function getUploadUrl(): Promise<UploadConfig> {
   const res = await client.get<UploadConfig>(ENDPOINTS.PHOTOS.UPLOAD_URL);

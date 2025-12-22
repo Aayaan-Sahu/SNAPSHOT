@@ -12,10 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { CustomSegmentedControl } from "./components/CustomSegmentedControl";
-import { RequestList } from "./components/RequestList";
-import { FriendSearchInput } from "./components/FriendSearchInput";
-import { FriendList } from "./components/FriendList";
+import { Friend } from "../../api/types";
 import {
   getIncomingFriendRequests,
   getOutgoingFriendRequesets,
@@ -24,10 +21,14 @@ import {
   cancelFriendRequest,
   getFriends,
   sendFriendRequest,
-  Friend,
   removeFriend,
 } from "./api";
 import { PendingRequest } from "../../api/types";
+
+import { FriendList } from "./components/FriendList";
+import { CustomSegmentedControl } from "./components/CustomSegmentedControl";
+import { RequestList } from "./components/RequestList";
+import { FriendSearchInput } from "./components/FriendSearchInput";
 
 export const FriendsScreen = () => {
   const [activeTab, setActiveTab] = useState(1);
@@ -189,13 +190,6 @@ export const FriendsScreen = () => {
     </SafeAreaView>
   );
 };
-
-const AddFriendPlaceholder = () => (
-  <View style={styles.placeholderContainer}>
-    <Text style={styles.placeholderText}>Search by email to add friends</Text>
-    {/* Future: <SearchBar /> */}
-  </View>
-);
 
 const styles = StyleSheet.create({
   container: {

@@ -1,12 +1,14 @@
 import { View, ActivityIndicator } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useAuth } from "../context/AuthContext";
-import { AuthScreen } from "../screens/AuthScreen";
-import { HomeScreen } from "../features/feed/HomeScreen";
-import { GroupSlideshowScreen } from "../features/feed/GroupSlideshowScreen";
+
 import { RootStackParamList } from "./types";
+import { useAuth } from "../context/AuthContext";
+
+import { AuthScreen } from "../features/authentication/AuthScreen";
+import { HomeScreen } from "../features/feed/HomeScreen";
 import { CameraScreen } from "../features/camera/CameraScreen";
 import { FriendsScreen } from "../features/friends/FriendsScreen";
+import { GroupSlideshowScreen } from "../features/feed/GroupSlideshowScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

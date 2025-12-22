@@ -16,7 +16,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import { getFriends, Friend } from "../friends/api";
+import { getFriends } from "../friends/api";
+import { Friend } from "../../api/types";
 import { createGroup } from "./api";
 
 interface CreateGroupModalProps {

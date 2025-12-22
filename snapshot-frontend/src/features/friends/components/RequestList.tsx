@@ -9,7 +9,8 @@ import {
   ListRenderItem,
   RefreshControl,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // Standard in Expo
+import { Ionicons } from "@expo/vector-icons";
+
 import { PendingRequest } from "../../../api/types";
 
 interface RequestListProps {

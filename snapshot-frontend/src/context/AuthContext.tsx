@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+
+import { ENDPOINTS } from "../api/endpoints";
 import { initGoogleSignin } from "../auth/google";
 import { restoreSession } from "../auth/session";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { loginWithGoogleIdToken } from "../auth/login";
 import { client, deleteAuthToken } from "../api/client";
-import { ENDPOINTS } from "../api/endpoints";
 
 type User = {
   id: string;

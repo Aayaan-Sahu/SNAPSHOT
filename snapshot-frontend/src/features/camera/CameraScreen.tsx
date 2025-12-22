@@ -4,7 +4,8 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getUploadUrl, confirmUpload, UploadConfig } from "./api"
+import { UploadConfig } from "../../api/types";
+import { getUploadUrl, confirmUpload } from "./api"
 import { compressImage, uploadToS3 } from "../../services/media";
 import { useSnapshot } from "../../context/SnapshotContext";
 

@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, FlatList, StyleSheet, Image, Alert, TouchableOpacity } from "react-native";
-import { Friend } from "../api";
 import { Ionicons } from "@expo/vector-icons";
+
+import { Friend } from "../../../api/types";
 
 interface Props {
   data: Friend[];

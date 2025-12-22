@@ -1,6 +1,7 @@
 import { client } from "../../api/client";
 import { ENDPOINTS } from "../../api/endpoints";
 import { PendingRequest } from "../../api/types";
+import { Friend } from "../../api/types";
 
 interface IncomingResponse {
   incoming_requests: PendingRequest[];
@@ -50,12 +51,6 @@ export async function cancelFriendRequest(target_id: string): Promise<void> {
       target_id: target_id,
     }
   );
-}
-
-export interface Friend {
-  id: string;
-  name: string;
-  picture: string;
 }
 
 interface FriendsResponse {

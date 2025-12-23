@@ -10,6 +10,7 @@ import {
   Platform,
   Button,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -23,9 +24,10 @@ import { NotificationsService } from "../../services/notifications";
 
 import { GroupCard } from "../../components/GroupCard";
 import { CameraTrigger } from "../camera/components/CameraTrigger";
+import { GroupListItem } from "./components/GroupListItem";
 
 import { Group } from "../../api/types";
-import { fetchUserGroups } from "./api";
+import { fetchUserGroups, leaveGroup, deleteGroup } from "./api";
 import { RootStackParamList } from "../../navigation/types";
 import { CreateGroupModal } from "./CreateGroupModal";
 
@@ -58,6 +60,59 @@ export const HomeScreen = () => {
   const handleCameraPress = () => {
     navigation.navigate("Camera");
   }
+
+  const handleDeletePress = (group: Group) => {
+    if (!user?.id) {
+      console.warn("User ID missing during delete operation.");
+      Alert.alert("Error", "User session not fully loaded. Please restart the app.");
+      return;
+    }
+
+    const isOwner = group.owner_id === user?.id;
+
+    if (isOwner) {
+      Alert.alert(
+        "Delete Group?",
+        `Are you sure you want to delete "${group.name}"? This action cannot be undone and will remove it for all members.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Delete", 
+            style: "destructive", 
+            onPress: async () => {
+               try {
+                 await deleteGroup(group.id);
+                 // Refresh list
+                 onRefresh();
+               } catch (e) {
+                 Alert.alert("Error", "Failed to delete group.");
+               }
+            } 
+          }
+        ]
+      );
+    } else {
+      Alert.alert(
+        "Leave Group?",
+        `Are you sure you want to leave "${group.name}"?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Leave", 
+            style: "destructive", 
+            onPress: async () => {
+               try {
+                 await leaveGroup(group.id);
+                 onRefresh();
+               } catch (e) {
+                 Alert.alert("Error", "Failed to leave group.");
+               }
+            } 
+          }
+        ]
+      );
+    }
+  };
 
   useEffect(() => {
     loadGroups();
@@ -139,12 +194,19 @@ export const HomeScreen = () => {
         <FlatList
           data={groups}
           keyExtractor={(item) => item.id}
+          // renderItem={({ item }) => (
+          //   <View style={styles.cardWrap}>
+          //     <GroupCard group={item} onPress={handleGroupPress} />
+          //   </View>
+          // )}
           renderItem={({ item }) => (
-            <View style={styles.cardWrap}>
-              <GroupCard group={item} onPress={handleGroupPress} />
-            </View>
+            <GroupListItem
+              group={item}
+              onPress={handleGroupPress}
+              onDeletePress={handleDeletePress}
+            />
           )}
-          contentContainerStyle={styles.listContent}
+          // contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }

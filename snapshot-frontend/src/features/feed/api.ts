@@ -25,3 +25,23 @@ export async function createGroup(name: string, memberIds: string[]): Promise<Gr
   );
   return response.data.group;
 }
+
+export async function leaveGroup(groupId: string): Promise<void> {
+  await client.post(
+    ENDPOINTS.GROUPS.LEAVE,
+    {
+      group_id: groupId
+    }
+  );
+}
+
+export async function deleteGroup(groupId: string): Promise<void> {
+  await client.delete(
+    ENDPOINTS.GROUPS.BASE,
+    {
+      params: {
+        group_id: groupId
+      }
+    }
+  );
+}

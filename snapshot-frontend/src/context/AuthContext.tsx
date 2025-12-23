@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ENDPOINTS } from "../api/endpoints";
 import { initGoogleSignin } from "../auth/google";
@@ -30,12 +31,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initialize = async () => {
       initGoogleSignin();
+
+      try {
+        const storedUser = await AsyncStorage.getItem("auth.user");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (err) {
+        console.warn("Failed to load user from storage", err);
+      }
+
       const session = await restoreSession();
       if (session.ok) {
         setUser(session.me);
+        AsyncStorage.setItem("auth.user", JSON.stringify(session.me));
+      } else {
+        setUser(null);
+        AsyncStorage.removeItem("auth.user");
       }
       setIsLoading(false);
     }
+
     initialize();
   }, []);
 
@@ -51,7 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await loginWithGoogleIdToken(idToken);
 
       const me = await client.get(ENDPOINTS.USER.ME);
-      setUser(me.data);
+      const userData = me.data;
+
+      setUser(userData);
+      await AsyncStorage.setItem("auth.user", JSON.stringify(userData));
     } catch (error) {
       console.error("Sign in failed", error);
       throw error;
@@ -66,6 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Sign out failed", error);
     } finally {
       setUser(null);
+      await AsyncStorage.removeItem("auth.user");
     }
   };
 

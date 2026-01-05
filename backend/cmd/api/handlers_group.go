@@ -372,3 +372,46 @@ func handleDeleteGroup(w http.ResponseWriter, r *http.Request) {
 		"id":     groupID,
 	})
 }
+
+func handleGetOwner(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+
+	groupID := r.URL.Query().Get("group_id")
+	if groupID == "" {
+		http.Error(w, "group_id is required", http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := auth.GetUserID(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var exists bool
+	err := db.QueryRow(r.Context(),
+		"SELECT EXISTS(SELECT 1 FROM group_members WHERE group_id=$1 AND user_id=$2)",
+		groupID, userID,
+	).Scan(&exists)
+	if err != nil || !exists {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	var ownerID string
+	err = db.QueryRow(r.Context(),
+		"SELECT owner_id FROM groups WHERE id = $1",
+		groupID,
+	).Scan(&ownerID)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"owner_id": ownerID,
+	})
+}

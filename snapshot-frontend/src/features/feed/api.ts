@@ -1,6 +1,6 @@
 import { client } from "../../api/client";
 import { ENDPOINTS } from "../../api/endpoints";
-import { Group } from "../../api/types";
+import { Group, Friend } from "../../api/types";
 
 interface FetchGroupsResponse {
   groups: Group[];
@@ -44,4 +44,36 @@ export async function deleteGroup(groupId: string): Promise<void> {
       }
     }
   );
+}
+
+interface FetchGroupMembersResponse {
+  members: Friend[];
+}
+
+export async function fetchGroupMembers(groupId: string): Promise<Friend[]> {
+  const response = await client.get<FetchGroupMembersResponse>(
+    ENDPOINTS.GROUPS.MEMBERS,
+    {
+      params: {
+        group_id: groupId
+      }
+    }
+  );
+  return response.data.members;
+}
+
+interface FetchOwnerResponse {
+  owner_id: string;
+}
+
+export async function fetchGroupOwner(groupId: string): Promise<string> {
+  const response = await client.get<FetchOwnerResponse>(
+    ENDPOINTS.GROUPS.OWNER,
+    {
+      params: {
+        group_id: groupId,
+      },
+    },
+  );
+  return response.data.owner_id;
 }

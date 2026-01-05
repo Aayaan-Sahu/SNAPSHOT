@@ -9,6 +9,7 @@ import { HomeScreen } from "../features/feed/HomeScreen";
 import { CameraScreen } from "../features/camera/CameraScreen";
 import { FriendsScreen } from "../features/friends/FriendsScreen";
 import { GroupSlideshowScreen } from "../features/feed/GroupSlideshowScreen";
+import { GroupInfoScreen } from "../features/feed/GroupInfoScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -44,6 +45,14 @@ export function RootNavigator() {
             name="Camera" 
             component={CameraScreen} 
             options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+            name="GroupInfo" 
+            component={GroupInfoScreen} 
+            options={{
+              title: "Group Info",
+              headerTintColor: "#000",
+            }}
           />
         </>
       ) : (

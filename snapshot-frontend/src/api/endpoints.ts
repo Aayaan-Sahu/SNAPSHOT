@@ -15,6 +15,7 @@ export const ENDPOINTS = {
     JOIN: "/api/groups/join",
     LEAVE: "/api/groups/leave",
     MEMBERS: "/api/groups/members",
+    OWNER: "/api/groups/owner",
     DETAILS: (groupId: string) => `/api/groups/${groupId}`,
   },
 

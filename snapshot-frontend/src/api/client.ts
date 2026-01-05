@@ -6,8 +6,7 @@ import axios, {
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-// const DEV_IP = '192.168.68.58';
-const DEV_IP = '10.10.7.74';
+const DEV_IP = '192.168.68.58';
 const BASE_URL = `http://${DEV_IP}:8080`;
 const AUTH_TOKEN_KEY = 'auth_token';
 

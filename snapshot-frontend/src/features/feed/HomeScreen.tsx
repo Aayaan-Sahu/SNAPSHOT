@@ -138,7 +138,8 @@ export const HomeScreen = () => {
   const handleGroupPress = (group: Group) => {
     navigation.navigate("GroupSlideshow", {
       groupId: group.id,
-      groupName: group.name
+      groupName: group.name,
+      ownerId: group.owner_id,
     });
   };
 
@@ -194,11 +195,6 @@ export const HomeScreen = () => {
         <FlatList
           data={groups}
           keyExtractor={(item) => item.id}
-          // renderItem={({ item }) => (
-          //   <View style={styles.cardWrap}>
-          //     <GroupCard group={item} onPress={handleGroupPress} />
-          //   </View>
-          // )}
           renderItem={({ item }) => (
             <GroupListItem
               group={item}
@@ -206,7 +202,6 @@ export const HomeScreen = () => {
               onDeletePress={handleDeletePress}
             />
           )}
-          // contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }

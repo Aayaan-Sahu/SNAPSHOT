@@ -1,13 +1,40 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import React, { useEffect, useLayoutEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { RootStackParamList } from "../../navigation/types";
+import { useNavigation } from "@react-navigation/native";
+import { ScreenStackHeaderRightView } from "react-native-screens";
+import { Ionicons } from "@expo/vector-icons";
+import { fetchGroupOwner } from "./api";
 
 type Props = NativeStackScreenProps<RootStackParamList, "GroupSlideshow">;
 
 export const GroupSlideshowScreen = ({ route }: Props) => {
-  const { groupId, groupName } = route.params;
+  const { groupId, groupName, ownerId } = route.params;
+
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            if (ownerId) {
+              navigation.navigate("GroupInfo", {
+                groupId: groupId,
+                groupName: groupName,
+                ownerId: ownerId,
+              });
+            }
+          }}
+        >
+          <Ionicons name="information-circle-outline" size={24} color="#007AFF" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, groupId, groupName, ownerId]);
 
   return (
     <View style={styles.container}>

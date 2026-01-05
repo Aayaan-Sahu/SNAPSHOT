@@ -46,6 +46,7 @@ func main() {
 	http.Handle("/api/groups/join", auth.RequireAuth(http.HandlerFunc(handleJoinGroup)))
 	http.Handle("/api/groups/members", auth.RequireAuth(http.HandlerFunc(handleGetGroupMembers)))
 	http.Handle("/api/groups/leave", auth.RequireAuth(http.HandlerFunc(handleLeaveGroup)))
+	http.Handle("/api/groups/owner", auth.RequireAuth(http.HandlerFunc(handleGetOwner)))
 
 	http.Handle("/api/friends", auth.RequireAuth(http.HandlerFunc(handleListFriends)))
 	http.Handle("/api/friends/request", auth.RequireAuth(http.HandlerFunc(handleFriendRequest)))
